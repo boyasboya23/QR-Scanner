@@ -1,36 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>QR Attendance Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <meta charset="UTF-8">
+  <title>QR Scanner Attendance</title>
 </head>
 <body>
-  <h2>Scan QR Code</h2>
-  <div id="reader" style="width:300px"></div>
-  <p id="status"></p>
+  <h1>QR Scanner</h1>
+  <p id="status">Waiting for scan...</p>
+
+  <!-- Example button to simulate a scan -->
+  <button onclick="sendID('ID-001')">Simulate Scan ID-001</button>
+  <button onclick="sendID('ID-004')">Simulate Scan ID-004</button>
 
   <script>
-    function onScanSuccess(decodedText, decodedResult) {
-      document.getElementById("status").innerText = "Scanned: " + decodedText;
-
-      // Send scanned ID to Google Apps Script Web App
+    function sendID(decodedText) {
       fetch("https://script.google.com/macros/s/AKfycbyRmzFqJfbOalXXYhoxX131s9eFDTTktnJKFFijHT-6roJ3Kq2nbmA0syjyZ6o_6b5BWQ/exec", {
         method: "POST",
         body: JSON.stringify({ id: decodedText }),
         headers: { "Content-Type": "application/json" }
       })
-      .then(res => res.text())
-      .then(msg => {
-        document.getElementById("status").innerText = msg;
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          document.getElementById("status").innerText =
+            `${data.name} (${data.id}) marked Present`;
+        } else {
+          document.getElementById("status").innerText = data.message;
+        }
       })
       .catch(err => {
         document.getElementById("status").innerText = "Error: " + err;
       });
     }
-
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader", { fps: 10, qrbox: 250 });
-    html5QrcodeScanner.render(onScanSuccess);
   </script>
 </body>
 </html>
