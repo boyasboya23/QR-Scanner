@@ -1,36 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>QR Scanner Attendance</title>
+  <title>QR Attendance Scanner</title>
+  <!-- Correct script path -->
+  <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+    #reader { width: 300px; margin: auto; }
+    #status { margin-top: 20px; font-size: 18px; font-weight: bold; }
+    button { margin: 10px; padding: 10px 20px; }
+  </style>
 </head>
 <body>
-  <h1>QR Scanner</h1>
+  <h1>QR Attendance Scanner</h1>
+  <div id="reader"></div>
   <p id="status">Waiting for scan...</p>
-
-  <!-- Example button to simulate a scan -->
-  <button onclick="sendID('ID-001')">Simulate Scan ID-001</button>
-  <button onclick="sendID('ID-004')">Simulate Scan ID-004</button>
+  <button onclick="startScanner()">Start Camera</button>
+  <button onclick="stopScanner()">Stop Camera</button>
 
   <script>
-    function sendID(decodedText) {
-      fetch("https://script.google.com/macros/s/AKfycbyRmzFqJfbOalXXYhoxX131s9eFDTTktnJKFFijHT-6roJ3Kq2nbmA0syjyZ6o_6b5BWQ/exec", {
-        method: "POST",
-        body: JSON.stringify({ id: decodedText }),
-        headers: { "Content-Type": "application/json" }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "success") {
-          document.getElementById("status").innerText =
-            `${data.name} (${data.id}) marked Present`;
-        } else {
-          document.getElementById("status").innerText = data.message;
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRmzFqJfbOalXXYhoxX131s9eFDTTktnJKFFijHT-6roJ3Kq2nbmA0syjyZ6o_6b5BWQ/exec";
+    let html5QrCode;
+
+    function markAttendance(decodedText) {
+      const url = SCRIPT_URL + "?id=" + encodeURIComponent(decodedText);
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            document.getElementById("status").innerText =
+              `${data.name} (${data.id}) marked Present`;
+          } else {
+            document.getElementById("status").innerText = data.message;
+          }
+        })
+        .catch(err => {
+          document.getElementById("status").innerText = "Error: " + err;
+        });
+    }
+
+    function startScanner() {
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" }, // back camera
+        { fps: 10, qrbox: 250 },
+        (decodedText, decodedResult) => {
+          markAttendance(decodedText);
         }
-      })
-      .catch(err => {
-        document.getElementById("status").innerText = "Error: " + err;
+      ).catch(err => {
+        document.getElementById("status").innerText = "Camera error: " + err;
       });
+    }
+
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          document.getElementById("status").innerText = "Camera stopped.";
+        }).catch(err => {
+          document.getElementById("status").innerText = "Stop error: " + err;
+        });
+      }
     }
   </script>
 </body>
