@@ -7,8 +7,8 @@
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
     #reader { width: 100%; max-width: 600px; margin: auto; }
-    #status { margin-top: 20px; font-size: 20px; font-weight: bold; }
-    button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+    #status { margin-top: 20px; font-size: 22px; font-weight: bold; }
+    button { margin: 10px; padding: 12px 24px; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -17,11 +17,11 @@
   <p id="status">Waiting for scan...</p>
   <button onclick="startScanner()">Start Camera</button>
   <button onclick="stopScanner()">Stop Camera</button>
+  <button onclick="restartScanner()">Restart Scanner</button>
 
   <script>
-    // Replace with your own Apps Script Web App URL
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRmzFqJfbOalXXYhoxX131s9eFDTTktnJKFFijHT-6roJ3Kq2nbmA0syjyZ6o_6b5BWQ/exec";
-    const EVENT_NAME = "Annual Assembly"; // <-- customize your event name here
+    const EVENT_NAME = "Annual Assembly"; // customize your event name
     let html5QrCode;
 
     function markAttendance(decodedText) {
@@ -29,16 +29,12 @@
 
       fetch(url)
         .then(res => res.json())
-        .then(async data => {
+        .then(data => {
           if (data.status === "success") {
             document.getElementById("status").innerText =
-              `Welcome ${data.name} to the ${EVENT_NAME}!`;
+              `🎉 Welcome ${data.name} to the ${EVENT_NAME}!`;
           } else {
             document.getElementById("status").innerText = data.message;
-          }
-          // Stop scanner after first result
-          if (html5QrCode) {
-            await html5QrCode.stop();
           }
         })
         .catch(err => {
@@ -52,13 +48,13 @@
       try {
         const devices = await Html5Qrcode.getCameras();
         if (devices && devices.length) {
-          // Pick back camera if available
           const backCamera = devices.find(d => d.label.toLowerCase().includes("back")) || devices[devices.length - 1];
           await html5QrCode.start(
             backCamera.id,
-            { fps: 5, qrbox: { width: Math.min(window.innerWidth * 0.8, 300), height: Math.min(window.innerWidth * 0.8, 300) } },
-            (decodedText, decodedResult) => {
+            { fps: 5, qrbox: { width: Math.min(window.innerWidth * 0.8, 350), height: Math.min(window.innerWidth * 0.8, 350) } },
+            async (decodedText, decodedResult) => {
               markAttendance(decodedText);
+              await html5QrCode.stop(); // stop after first scan
             }
           );
         } else {
@@ -77,6 +73,11 @@
           document.getElementById("status").innerText = "Stop error: " + err;
         });
       }
+    }
+
+    function restartScanner() {
+      stopScanner();
+      setTimeout(startScanner, 500); // restart after short delay
     }
   </script>
 </body>
