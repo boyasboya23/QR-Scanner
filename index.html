@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>QR Attendance Scanner</title>
-  <!-- Correct script path -->
   <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-    #reader { width: 300px; margin: auto; }
+    #reader { width: 100%; max-width: 400px; margin: auto; }
     #status { margin-top: 20px; font-size: 18px; font-weight: bold; }
     button { margin: 10px; padding: 10px 20px; }
   </style>
@@ -41,17 +40,29 @@
         });
     }
 
-    function startScanner() {
+    async function startScanner() {
       html5QrCode = new Html5Qrcode("reader");
-      html5QrCode.start(
-        { facingMode: "environment" }, // back camera
-        { fps: 10, qrbox: 250 },
-        (decodedText, decodedResult) => {
-          markAttendance(decodedText);
+
+      try {
+        // Get all available cameras
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length) {
+          // Try to pick the back camera (usually the last one)
+          const backCamera = devices.find(d => d.label.toLowerCase().includes("back")) || devices[devices.length - 1];
+
+          await html5QrCode.start(
+            backCamera.id,
+            { fps: 5, qrbox: { width: 200, height: 200 } },
+            (decodedText, decodedResult) => {
+              markAttendance(decodedText);
+            }
+          );
+        } else {
+          document.getElementById("status").innerText = "No cameras found.";
         }
-      ).catch(err => {
+      } catch (err) {
         document.getElementById("status").innerText = "Camera error: " + err;
-      });
+      }
     }
 
     function stopScanner() {
